@@ -11,6 +11,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier as DTC
 from sklearn.metrics import accuracy_score,classification_report,confusion_matrix
 from sklearn.feature_extraction import DictVectorizer
+from collections import defaultdict
 
 def transform_data(train_location, cat):
     
@@ -35,7 +36,7 @@ def transform_data(train_location, cat):
     titanic_df ['Title'] = titanic_df ['Title'].map(title_mapping)
     titanic_df ['Family'] = titanic_df ['SibSp'] + titanic_df ['Parch']
     titanic_df ['Age*Class'] = titanic_df .Age * titanic_df .Pclass
-    
+    titanic_df = titanic_df.replace(['None'], '0')
     
     
     titanic_df ['Sex'] = titanic_df ['Sex'].map( {'female': 1, 'male': 0} ).astype(float)
@@ -43,7 +44,9 @@ def transform_data(train_location, cat):
     titanic_df ['Deck'] = titanic_df ['Deck'].map( {'A': 0, 'B': 1, 'C': 2,'D': 3, 'E': 4, 'F': 5,'G': 6, 'T': 7} ).astype(float)
     titanic_df ['Cabin Number'] = titanic_df ['Cabin Number'].map( {'A': 0, 'B': 1, 'C': 2,'D': 3, 'E': 4, 'F': 5,'G': 6, 'T': 7} ).astype(float)
     
-    
+    #for c in titanic_df:
+    #    if str(titanic_df[c].dtype) in ('object', 'string_', 'unicode_'):
+    #        titanic_df[c].fillna(value='', inplace=True)
     
     
     
@@ -51,7 +54,7 @@ def transform_data(train_location, cat):
     titanic_df  = titanic_df .drop(['Ticket'], axis=1)
     titanic_df  = titanic_df .drop(['PassengerId'], axis=1)
     titanic_df  = titanic_df .drop(['Cabin'], axis=1)        
-    titanic_df  = titanic_df .drop(['Cabin Number'], axis=1)
+    #titanic_df  = titanic_df .drop(['Cabin Number'], axis=1)
     #titanic_df  = titanic_df .drop(['Deck'], axis=1)
         
     # Pull out features for future use
@@ -59,10 +62,6 @@ def transform_data(train_location, cat):
 
     print ("Column names:")
     print (features_names)
-    
-    print(titanic_df.head())
-    
-    titanic_df = titanic_df.astype(object).replace(np.nan, 'None')
     
     
     titanic_df = pd.get_dummies(titanic_df)
@@ -72,14 +71,21 @@ def transform_data(train_location, cat):
     if (cat==1):
         X = titanic_df.drop("Survived", axis=1)
         Y = titanic_df["Survived"]
+        
+        X = X.as_matrix().astype(np.int)
+        Y = Y.as_matrix().astype(np.int)
+        
         return X, Y
     else:
         X  = titanic_df
+        
+        X = X.as_matrix().astype(np.int)
+        
         return X
         
 
-train_location = "train.csv"
-test_location = "test.csv"
+train_location = "C:/Users/Oliver Crosbie Higgs/Documents/personal projects/train.csv"
+test_location = "C:/Users/Oliver Crosbie Higgs/Documents/personal projects/test.csv"
 
 X_train, Y_train = transform_data(train_location,1)
 X_test = transform_data(test_location,0)
@@ -88,4 +94,6 @@ forest = RandomForestClassifier(n_estimators=250,random_state=0)
 model1a = DTC(max_depth=10)
 
 classifier = OneVsRestClassifier(model1a)
-y_score = classifier.fit(X_train, Y_train).predict_proba(X_test)
+y_score = classifier.fit(X_train, Y_train).predict(X_test.astype(int))
+
+np.savetxt("y_score.csv", y_score, delimiter=",")
